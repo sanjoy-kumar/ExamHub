@@ -1,0 +1,99 @@
+# ============================
+# Global
+# ============================
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.*
+
+
+# ============================
+# Python / Flask Backend
+# ============================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+
+# Virtual environment
+venv/
+env/
+*.venv/
+
+# Flask cache
+instance/
+.cache/
+.pytest_cache/
+
+# Migrations (optional: keep if you want in repo)
+# migrations/
+# Uncomment below if you want to keep migrations instead:
+!migrations/versions/
+
+# SQLite database
+*.sqlite
+*.db
+
+
+# ============================
+# Node / React Frontend
+# ============================
+
+# Node modules
+frontend/node_modules/
+node_modules/
+
+# Build output
+frontend/build/
+build/
+dist/
+
+# Cache
+.npm/
+.yarn/
+.pnp/
+.pnp.js
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.yarn/patches/
+
+# Local environment overrides
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Static file cache
+*.cache
+
+
+# ============================
+# IDE / Editor Files
+# ============================
+
+# VS Code
+.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# JetBrains
+.idea/
+
+# ===== End =====
