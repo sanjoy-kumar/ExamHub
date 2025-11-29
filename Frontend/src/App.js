@@ -35,12 +35,17 @@ function App() {
   const [timeLeft, setTimeLeft] = useState(0);
 
   // NEW STATES FOR ATTEMPTS
-  const [view, setView] = useState("menu"); // menu | exam | attempts | reviewAttempt
+  const [view, setView] = useState("menu"); // menu | exam | attempts | reviewAttempt | dashboard | charts | selectEditTest | editQuestions
   const [attempts, setAttempts] = useState([]);
   const [selectedAttemptId, setSelectedAttemptId] = useState(null);
   const [attemptDetails, setAttemptDetails] = useState([]);
   const [userId, setUserId] = useState(null);
   const [login, setLogin] = useState({ username: "", password: "" });
+
+  // NEW STATES FOR EDITING QUESTIONS
+  const [editingQuestionSet, setEditingQuestionSet] = useState([]); // Questions for editing
+  const [currentEditIndex, setCurrentEditIndex] = useState(0);
+  const [selectedNewAnswer, setSelectedNewAnswer] = useState(null); // The selected option text
 
   // Dashboard & Chart
   const [summary, setSummary] = useState({
@@ -58,7 +63,10 @@ function App() {
     test5: "NACC Mock Test 5",
     test6: "NACC Mock Test 6",
     test7: "NACC Mock Test 7",
-    test8: "NACC Mock Test 8"
+    test8: "NACC Mock Test 8",
+    test9: "NACC Mock Test 9",
+    test10: "NACC Mock Test 10",
+    test11: "800 Questions"
   };
 
 
@@ -140,6 +148,86 @@ function App() {
   };
 
   // --------------------------
+  // EDITING HANDLERS
+  // --------------------------
+  const handleStartEditing = (testId) => {
+    // Re-use the existing logic to fetch questions for a test
+    axios
+      .get(`http://localhost:5000/api/${testId}/questions`)
+      .then((res) => {
+        setEditingQuestionSet(res.data);
+        setCurrentEditIndex(0);
+        // Set the selected answer to the existing correct answer of the first question
+        setSelectedNewAnswer(res.data[0].answer || null);
+        setView("editQuestions");
+      })
+      .catch((err) => console.error("Error fetching questions for edit:", err));
+  };
+
+  const handleEditAnswerChange = (optionText) => {
+    setSelectedNewAnswer(optionText);
+  };
+
+  const handleUpdateAnswer = async () => {
+    const currentQuestion = editingQuestionSet[currentEditIndex];
+    if (!selectedNewAnswer) {
+      alert("Please select a correct answer option.");
+      return;
+    }
+
+    try {
+      const response = await axios.put(
+        `http://localhost:5000/api/question/${currentQuestion.id}/update_answer`,
+        { new_answer: selectedNewAnswer }
+      );
+
+      if (response.data.success) {
+        alert("Answer updated successfully!");
+
+        // Update the local state to reflect the change
+        const updatedQuestions = editingQuestionSet.map((q, index) => {
+          if (index === currentEditIndex) {
+            return { ...q, answer: selectedNewAnswer };
+          }
+          return q;
+        });
+        setEditingQuestionSet(updatedQuestions);
+
+        // Move to the next question
+        handleNextEdit();
+
+      } else {
+        alert(`Failed to update answer: ${response.data.message}`);
+      }
+    } catch (error) {
+      console.error("Error updating answer:", error);
+      alert("An error occurred while updating the answer.");
+    }
+  };
+
+  const handleNextEdit = () => {
+    if (currentEditIndex < editingQuestionSet.length - 1) {
+      const nextIndex = currentEditIndex + 1;
+      const nextQuestion = editingQuestionSet[nextIndex];
+      // Set the selected answer to the existing correct answer of the next question
+      setSelectedNewAnswer(nextQuestion.answer || null);
+      setCurrentEditIndex(nextIndex);
+    } else {
+      alert("Reached the end of the question set.");
+    }
+  };
+
+  const handlePreviousEdit = () => {
+    if (currentEditIndex > 0) {
+      const prevIndex = currentEditIndex - 1;
+      const prevQuestion = editingQuestionSet[prevIndex];
+      // Set the selected answer to the existing correct answer of the previous question
+      setSelectedNewAnswer(prevQuestion.answer || null);
+      setCurrentEditIndex(prevIndex);
+    }
+  };
+
+  // --------------------------
   // FETCH USER ATTEMPTS
   // --------------------------
   const fetchAttempts = () => {
@@ -170,7 +258,7 @@ function App() {
         `http://localhost:5000/api/attempt/${attemptId}/info`
       );
 
-      const testId = infoRes.data.test_id;  // example: "test1", "test2", "test3"
+      const testId = infoRes.data.test_id;  // example: "test1", "test2", "test3"
 
       // 3) Fetch correct question set for this attempt
       const qRes = await axios.get(
@@ -236,19 +324,24 @@ function App() {
         <p><b>Average Score:</b> {summary.average_score}</p>
 
         <button className="button-primary" onClick={() => setView("menu")}>
-          Take a Test
+          📝 Take a Test
         </button>
 
         <button className="button-primary" style={{ marginLeft: 20 }} onClick={() => fetchAttempts()}>
-          Review Past Attempts
+          👁️ Review Past Attempts
+        </button>
+
+        {/* NEW BUTTON FOR EDITING */}
+        <button className="button-primary" style={{ marginLeft: 20 }} onClick={() => setView("selectEditTest")}>
+          ✍️ Edit Question Answers
         </button>
 
         <button className="button-primary" style={{ marginLeft: 20 }} onClick={() => setView("charts")}>
-          View Performance Chart
+          📈 View Performance Chart
         </button>
 
         <button className="button-primary" style={{ marginLeft: 20 }} onClick={() => setUserId(null)}>
-          Logout
+          ⏻ Logout
         </button>
       </div>
     );
@@ -261,7 +354,7 @@ function App() {
 
         <div style={{ textAlign: "center", marginTop: "20px" }}>
           <button className="button-primary" onClick={() => setView("dashboard")}>
-            Back to Dashboard
+            🏠 Back to Dashboard
           </button>
         </div>
 
@@ -295,7 +388,7 @@ function App() {
 
         <div style={{ textAlign: "center", marginTop: "20px" }}>
           <button className="button-primary" onClick={() => setView("dashboard")}>
-            Back to Dashboard
+            🏠 Back to Dashboard
           </button>
         </div>
 
@@ -303,6 +396,49 @@ function App() {
     );
   }
 
+  // ------------------------
+  // SELECT TEST FOR EDITING PAGE (NEW VIEW)
+  // ------------------------
+  if (view === "selectEditTest") {
+    return (
+      <div style={{ textAlign: "center", marginTop: "20px", backgroundColor: "#FAFAFA", color: "#222" }}>
+        <h2 style={{ marginBottom: "20px" }}>Select a Mock Test to Edit Answers</h2>
+        <p style={{ marginBottom: "30px" }}>Select a test to begin setting the correct answers for each question.</p>
+        <ul
+          style={{
+            listStyle: "none",
+            padding: 0,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "10px",
+            justifyContent: "space-between",
+            maxWidth: "600px",
+            margin: "0 auto"
+          }}
+        >
+          {/* Dynamically create buttons based on TEST_TITLES */}
+          {Object.keys(TEST_TITLES).map(testId => (
+            <li key={testId} style={{ flex: '1 1 48%' }}>
+              <button
+                className="button-primary"
+                onClick={() => handleStartEditing(testId)}
+              >
+                {TEST_TITLES[testId]}
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <button
+          className="button-primary"
+          style={{ marginTop: "40px" }}
+          onClick={() => setView("dashboard")}
+        >
+          🏠 Back to Dashboard
+        </button>
+      </div>
+    );
+  }
 
   // ------------------------
   // MENU PAGE (ADDED ATTEMPTS BUTTON)
@@ -319,9 +455,9 @@ function App() {
           style={{
             listStyle: "none",
             padding: 0,
-            display: "flex",        // 1. Enable Flexbox
-            flexWrap: "wrap",       // 2. Allow items to wrap to the next line
-            gap: "10px",            // 3. Add space between rows/columns
+            display: "flex",        // 1. Enable Flexbox
+            flexWrap: "wrap",       // 2. Allow items to wrap to the next line
+            gap: "10px",            // 3. Add space between rows/columns
             justifyContent: "space-between", // Optional: Distribute items nicely
           }}
         >
@@ -364,7 +500,6 @@ function App() {
             <button
               className="button-primary"
               onClick={() => { setSelectedTest("test5"); setView("exam"); }}
-              disabled
             >
               NACC Mock Test 5
             </button>
@@ -373,7 +508,6 @@ function App() {
             <button
               className="button-primary"
               onClick={() => { setSelectedTest("test6"); setView("exam"); }}
-              disabled
             >
               NACC Mock Test 6
             </button>
@@ -382,7 +516,6 @@ function App() {
             <button
               className="button-primary"
               onClick={() => { setSelectedTest("test7"); setView("exam"); }}
-              disabled
             >
               NACC Mock Test 7
             </button>
@@ -391,9 +524,32 @@ function App() {
             <button
               className="button-primary"
               onClick={() => { setSelectedTest("test8"); setView("exam"); }}
-              disabled
             >
               NACC Mock Test 8
+            </button>
+          </li>
+          <li style={{ flex: '1 1 48%' }}>
+            <button
+              className="button-primary"
+              onClick={() => { setSelectedTest("test9"); setView("exam"); }}
+            >
+              NACC Mock Test 9
+            </button>
+          </li>
+          <li style={{ flex: '1 1 48%' }}>
+            <button
+              className="button-primary"
+              onClick={() => { setSelectedTest("test10"); setView("exam"); }}
+            >
+              NACC Mock Test 10
+            </button>
+          </li>
+          <li style={{ flex: '1 1 48%' }}>
+            <button
+              className="button-primary"
+              onClick={() => { setSelectedTest("test11"); setView("exam"); }}
+            >
+              800 Questions
             </button>
           </li>
         </ul>
@@ -403,7 +559,7 @@ function App() {
           style={{ marginTop: "20px" }}
           onClick={() => setView("dashboard")}
         >
-          Back to Dashboard
+          🏠 Back to Dashboard
         </button>
 
 
@@ -424,6 +580,107 @@ function App() {
   }
 
   // -----------------------------------
+  // QUESTION EDIT PAGE (NEW VIEW)
+  // -----------------------------------
+  if (view === "editQuestions") {
+    if (editingQuestionSet.length === 0) return <p>Loading questions for edit...</p>;
+
+    const currentQuestion = editingQuestionSet[currentEditIndex];
+
+    return (
+      <div style={{ padding: "20px" }}>
+        <h2 style={{ textAlign: "center" }}>Edit Question Answer</h2>
+
+        <div style={{ marginTop: "20px", textAlign: "center" }}>
+          <button
+            className="button-primary"
+            onClick={() => setView("selectEditTest")}
+            style={{ marginRight: "20px" }}
+          >
+            ⚙️ Change Test
+          </button>
+          <button className="button-primary" onClick={() => setView("dashboard")}>
+            🏠 Back to Dashboard
+          </button>
+        </div>
+
+        <p style={{ textAlign: "center", fontWeight: "bold" }}>
+          Question {currentEditIndex + 1} of {editingQuestionSet.length}
+        </p>
+
+        <div style={{ margin: "20px auto", padding: "15px", border: "1px solid #ccc", backgroundColor: "#fff", maxWidth: "800px" }}>
+          <p style={{ fontSize: "20px", marginBottom: "15px" }}>
+            <b>Q{currentEditIndex + 1}. {currentQuestion.question}</b>
+          </p>
+
+          {/* Question Options */}
+          {currentQuestion.options.map((opt, idx) => {
+            const isNewAnswer = selectedNewAnswer === opt;
+            const isExistingAnswer = currentQuestion.answer === opt;
+
+            return (
+              <label
+                key={idx}
+                style={{
+                  display: "block",
+                  margin: "8px 0",
+                  fontSize: "18px",
+                  padding: "10px",
+                  border: isExistingAnswer && isNewAnswer ? "2px solid green" : isExistingAnswer ? "1px dashed #00b000" : isNewAnswer ? "2px solid #007bff" : "1px solid #eee",
+                  backgroundColor: isNewAnswer ? "#e9f5ff" : isExistingAnswer ? "#e6ffe6" : "#fff",
+                  borderRadius: "4px",
+                  cursor: "pointer"
+                }}
+              >
+                <input
+                  type="radio"
+                  name="newAnswer"
+                  value={opt}
+                  checked={isNewAnswer}
+                  onChange={() => handleEditAnswerChange(opt)}
+                  style={{ transform: "scale(1.2)", marginRight: "10px", cursor: "pointer" }}
+                />
+                {String.fromCharCode(97 + idx)}) {opt}
+                {isExistingAnswer && " (Current Correct Answer)"}
+                {isNewAnswer && !isExistingAnswer && " (Selected as New Correct Answer)"}
+              </label>
+            );
+          })}
+        </div>
+
+        {/* Control Buttons */}
+        <div style={{ marginTop: "20px", textAlign: "center" }}>
+          <button
+            onClick={handlePreviousEdit}
+            className="button-primary"
+            style={{ marginRight: "20px" }}
+            disabled={currentEditIndex === 0}
+          >
+            ⬅️ Previous
+          </button>
+
+          <button
+            onClick={handleNextEdit}
+            className="button-primary"
+            style={{ marginRight: "20px" }}
+            disabled={currentEditIndex === editingQuestionSet.length - 1}
+          >
+            Next ➡️
+          </button>
+
+          <button
+            onClick={handleUpdateAnswer}
+            className="button-primary"
+            style={{ marginRight: "20px" }}
+          >
+            💾 Update Answer
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // -----------------------------------
   // PAST ATTEMPTS PAGE
   // -----------------------------------
   if (view === "attempts") {
@@ -432,7 +689,7 @@ function App() {
         <h2 style={{ textAlign: "center", padding: 0 }}>Your Past Attempts</h2>
         <div style={{ textAlign: "center" }}>
           <button className="button-primary" onClick={() => setView("dashboard")}>
-            Back to Dashboard
+            🏠 Back to Dashboard
           </button>
         </div>
 
@@ -459,7 +716,7 @@ function App() {
         )}
         <div style={{ textAlign: "center" }}>
           <button className="button-primary" onClick={() => setView("dashboard")}>
-            Back to Dashboard
+            🏠 Back to Dashboard
           </button>
         </div>
       </div>
@@ -478,7 +735,7 @@ function App() {
         </button>
 
         <button style={{ marginLeft: "15px" }} className="button-primary" onClick={() => setView("dashboard")}>
-          Back to Dashboard
+          🏠 Back to Dashboard
         </button>
 
         {questions.map((q, idx) => {
@@ -512,7 +769,7 @@ function App() {
         </button>
 
         <button style={{ marginLeft: "15px" }} className="button-primary" onClick={() => setView("dashboard")}>
-          Back to Dashboard
+          🏠 Back to Dashboard
         </button>
       </div>
     );
@@ -552,7 +809,7 @@ function App() {
         {/* Right */}
         <div style={{ flex: 1, textAlign: "right" }}>
           <button className="button-primary" onClick={() => setView("dashboard")}>
-            Back to Dashboard
+            🏠 Back to Dashboard
           </button>
 
         </div>
@@ -631,16 +888,16 @@ function App() {
           <div style={{ marginTop: "10px", textAlign: "center" }}>
             {currentIndex > 0 && (
               <button onClick={handlePrevious} className="button-primary" style={{ marginRight: "20px" }}>
-                Previous
+                ⬅️ Previous
               </button>
             )}
             {currentIndex < questions.length - 1 ? (
               <button onClick={handleNext} className="button-primary">
-                Next
+                Next ➡️
               </button>
             ) : (
               <button onClick={handleSubmit} className="button-primary" style={{ marginRight: "20px" }}>
-                Submit Exam
+                🏆 Submit Exam
               </button>
             )}
           </div>
@@ -653,7 +910,7 @@ function App() {
           </p>
 
           <button onClick={() => setView("menu")} className="button-primary">
-            Back to Dashboard
+            🏠 Back to Dashboard
           </button>
           <h3>Review Questions</h3>
           <div style={{ marginTop: "20px", textAlign: "left" }}>
