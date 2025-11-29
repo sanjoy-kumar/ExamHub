@@ -48,7 +48,10 @@ def get_questions(test_id):
         "test8": "nacc_exam_8_questions",
         "test9": "nacc_exam_9_questions",
         "test10": "nacc_exam_10_questions",
-        "test11": "nacc_exam_800_questions"
+        "test11": "questions_1_to_200_out_of_800",
+        "test12": "questions_201_to_400_out_of_800",
+        "test13": "questions_401_to_600_out_of_800",
+        "test14": "questions_601_to_800_out_of_800"
     }
 
     if test_id not in table_map:
@@ -104,7 +107,10 @@ def submit_exam(test_id):
         "test8": "nacc_exam_8_questions",
         "test9": "nacc_exam_9_questions",
         "test10": "nacc_exam_10_questions",
-        "test11": "nacc_exam_800_questions"
+        "test11": "questions_1_to_200_out_of_800",
+        "test12": "questions_201_to_400_out_of_800",
+        "test13": "questions_401_to_600_out_of_800",
+        "test14": "questions_601_to_800_out_of_800"
     }
 
     if test_id not in table_map:
@@ -321,33 +327,69 @@ def get_attempt_info(attempt_id):
 
 @app.route('/api/question/<int:question_id>/update_answer', methods=['PUT'])
 def update_question_answer(question_id):
-    """
-    Updates the 'Answer' field for a specific question ID.
-    The 'new_answer' is expected to be the full text of the correct option.
-    """
     data = request.json
+    test_id = data.get('test_id')
     new_answer = data.get('new_answer')
 
+    if not test_id:
+        return jsonify({"success": False, "message": "Missing test_id"}), 400
+
     if not new_answer:
-        return jsonify({'success': False, 'message': 'Missing new_answer field'}), 400
+        return jsonify({"success": False, "message": "Missing new_answer"}), 400
+
+    table_map = {
+        "test1": "nacc_exam_1_questions",
+        "test2": "nacc_exam_2_questions",
+        "test3": "nacc_exam_3_questions",
+        "test4": "nacc_exam_4_questions",
+        "test5": "nacc_exam_5_questions",
+        "test6": "nacc_exam_6_questions",
+        "test7": "nacc_exam_7_questions",
+        "test8": "nacc_exam_8_questions",
+        "test9": "nacc_exam_9_questions",
+        "test10": "nacc_exam_10_questions",
+        "test11": "questions_1_to_200_out_of_800",
+        "test12": "questions_201_to_400_out_of_800",
+        "test13": "questions_401_to_600_out_of_800",
+        "test14": "questions_601_to_800_out_of_800"
+    }
+
+    if test_id not in table_map:
+        return jsonify({"success": False, "message": "Invalid test_id"}), 400
+
+    table = table_map[test_id]
 
     try:
         connection = create_db_connection()
-        cursor = connection.cursor(dictionary=True)
 
-        # SQL to update the 'Answer' column in your 'questions' table
-        sql = "UPDATE nacc_exam_800_questions SET Answer = %s WHERE id = %s"
-        cursor.execute(sql, (new_answer, question_id))
-        connection.commit()
+        with connection.cursor(dictionary=True) as cursor:
+            # Check if question exists in this test table
+            cursor.execute(
+                f"SELECT id FROM {table} WHERE id = %s", (question_id,))
+            if cursor.fetchone() is None:
+                return jsonify({
+                    "success": False,
+                    "message": "Question not found in this test"
+                }), 404
 
-        cursor.close()
-        connection.close()
+            # Update answer
+            cursor.execute(
+                f"UPDATE {table} SET Answer = %s WHERE id = %s",
+                (new_answer, question_id)
+            )
+            connection.commit()
 
-        return jsonify({'success': True, 'message': 'Answer updated successfully'}), 200
+        return jsonify({
+            "success": True,
+            "message": "Answer updated successfully"
+        }), 200
 
     except Exception as err:
         print(f"Database error: {err}")
-        return jsonify({'success': False, 'message': f'Database error: {err}'}), 500
+        return jsonify({
+            "success": False,
+            "message": f"Database error: {err}"
+        }), 500
 
 
 # --- Main Run Block ---

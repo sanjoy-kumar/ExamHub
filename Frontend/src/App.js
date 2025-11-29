@@ -46,6 +46,7 @@ function App() {
   const [editingQuestionSet, setEditingQuestionSet] = useState([]); // Questions for editing
   const [currentEditIndex, setCurrentEditIndex] = useState(0);
   const [selectedNewAnswer, setSelectedNewAnswer] = useState(null); // The selected option text
+  const [currentEditTestId, setCurrentEditTestId] = useState(null);
 
   // Dashboard & Chart
   const [summary, setSummary] = useState({
@@ -56,17 +57,20 @@ function App() {
 
   const [chartData, setChartData] = useState([]);
   const TEST_TITLES = {
-    test1: "NACC Mock Test 1",
-    test2: "NACC Mock Test 2",
-    test3: "NACC Mock Test 3",
-    test4: "NACC Mock Test 4",
-    test5: "NACC Mock Test 5",
-    test6: "NACC Mock Test 6",
-    test7: "NACC Mock Test 7",
-    test8: "NACC Mock Test 8",
-    test9: "NACC Mock Test 9",
-    test10: "NACC Mock Test 10",
-    test11: "800 Questions"
+    test1: "NACC Practice Test 1",
+    test2: "NACC Practice Test 2",
+    test3: "NACC Practice Test 3",
+    test4: "NACC Practice Test 4",
+    test5: "NACC Practice Test 5",
+    test6: "NACC Practice Test 6",
+    test7: "NACC Practice Test 7",
+    test8: "NACC Practice Test 8",
+    test9: "NACC Practice Test 9",
+    test10: "NACC Practice Test 10",
+    test11: "1~200(800 Questions)",
+    test12: "201~400(800 Questions)",
+    test13: "401~600(800 Questions)",
+    test14: "601~800(800 Questions)"
   };
 
 
@@ -152,6 +156,7 @@ function App() {
   // --------------------------
   const handleStartEditing = (testId) => {
     // Re-use the existing logic to fetch questions for a test
+    setCurrentEditTestId(testId);
     axios
       .get(`http://localhost:5000/api/${testId}/questions`)
       .then((res) => {
@@ -178,7 +183,10 @@ function App() {
     try {
       const response = await axios.put(
         `http://localhost:5000/api/question/${currentQuestion.id}/update_answer`,
-        { new_answer: selectedNewAnswer }
+        {
+          new_answer: selectedNewAnswer,
+          test_id: currentEditTestId
+        }
       );
 
       if (response.data.success) {
@@ -402,7 +410,7 @@ function App() {
   if (view === "selectEditTest") {
     return (
       <div style={{ textAlign: "center", marginTop: "20px", backgroundColor: "#FAFAFA", color: "#222" }}>
-        <h2 style={{ marginBottom: "20px" }}>Select a Mock Test to Edit Answers</h2>
+        <h2 style={{ marginBottom: "20px" }}>Select a Practice Test to Edit Answers</h2>
         <p style={{ marginBottom: "30px" }}>Select a test to begin setting the correct answers for each question.</p>
         <ul
           style={{
@@ -448,7 +456,7 @@ function App() {
       <div style={{ textAlign: "center", marginTop: "20px", backgroundColor: "#FAFAFA", color: "#222" }}>
 
         <img src={logo} alt="Logo" style={{ height: "120px", marginBottom: "10px" }} />
-        <h2>Select a Mock Test</h2>
+        <h2>Select a Practice Test</h2>
 
 
         <ul
@@ -469,7 +477,7 @@ function App() {
               className="button-primary"
               onClick={() => { setSelectedTest("test1"); setView("exam"); }}
             >
-              NACC Mock Test 1
+              NACC Practice Test 1
             </button>
           </li>
           <li style={{ flex: '1 1 48%' }}> {/* Use style for column width */}
@@ -477,7 +485,7 @@ function App() {
               className="button-primary"
               onClick={() => { setSelectedTest("test2"); setView("exam"); }}
             >
-              NACC Mock Test 2
+              NACC Practice Test 2
             </button>
           </li>
           <li style={{ flex: '1 1 48%' }}>
@@ -485,7 +493,7 @@ function App() {
               className="button-primary"
               onClick={() => { setSelectedTest("test3"); setView("exam"); }}
             >
-              NACC Mock Test 3
+              NACC Practice Test 3
             </button>
           </li>
           <li style={{ flex: '1 1 48%' }}>
@@ -493,7 +501,7 @@ function App() {
               className="button-primary"
               onClick={() => { setSelectedTest("test4"); setView("exam"); }}
             >
-              NACC Mock Test 4
+              NACC Practice Test 4
             </button>
           </li>
           <li style={{ flex: '1 1 48%' }}>
@@ -501,7 +509,7 @@ function App() {
               className="button-primary"
               onClick={() => { setSelectedTest("test5"); setView("exam"); }}
             >
-              NACC Mock Test 5
+              NACC Practice Test 5
             </button>
           </li>
           <li style={{ flex: '1 1 48%' }}>
@@ -509,7 +517,7 @@ function App() {
               className="button-primary"
               onClick={() => { setSelectedTest("test6"); setView("exam"); }}
             >
-              NACC Mock Test 6
+              NACC Practice Test 6
             </button>
           </li>
           <li style={{ flex: '1 1 48%' }}>
@@ -517,7 +525,7 @@ function App() {
               className="button-primary"
               onClick={() => { setSelectedTest("test7"); setView("exam"); }}
             >
-              NACC Mock Test 7
+              NACC Practice Test 7
             </button>
           </li>
           <li style={{ flex: '1 1 48%' }}>
@@ -525,7 +533,7 @@ function App() {
               className="button-primary"
               onClick={() => { setSelectedTest("test8"); setView("exam"); }}
             >
-              NACC Mock Test 8
+              NACC Practice Test 8
             </button>
           </li>
           <li style={{ flex: '1 1 48%' }}>
@@ -533,7 +541,7 @@ function App() {
               className="button-primary"
               onClick={() => { setSelectedTest("test9"); setView("exam"); }}
             >
-              NACC Mock Test 9
+              NACC Practice Test 9
             </button>
           </li>
           <li style={{ flex: '1 1 48%' }}>
@@ -541,7 +549,7 @@ function App() {
               className="button-primary"
               onClick={() => { setSelectedTest("test10"); setView("exam"); }}
             >
-              NACC Mock Test 10
+              NACC Practice Test 10
             </button>
           </li>
           <li style={{ flex: '1 1 48%' }}>
@@ -549,7 +557,32 @@ function App() {
               className="button-primary"
               onClick={() => { setSelectedTest("test11"); setView("exam"); }}
             >
-              800 Questions
+              1~200(800 Questions)
+            </button>
+          </li>
+          <li style={{ flex: '1 1 48%' }}>
+            <button
+              className="button-primary"
+              onClick={() => { setSelectedTest("test12"); setView("exam"); }}
+            >
+              201~400(800 Questions)
+            </button>
+          </li>
+
+          <li style={{ flex: '1 1 48%' }}>
+            <button
+              className="button-primary"
+              onClick={() => { setSelectedTest("test13"); setView("exam"); }}
+            >
+              401~600(800 Questions)
+            </button>
+          </li>
+          <li style={{ flex: '1 1 48%' }}>
+            <button
+              className="button-primary"
+              onClick={() => { setSelectedTest("test14"); setView("exam"); }}
+            >
+              601~800(800 Questions)
             </button>
           </li>
         </ul>
