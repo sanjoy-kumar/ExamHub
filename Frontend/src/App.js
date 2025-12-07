@@ -33,6 +33,7 @@ function App() {
   const [score, setScore] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
+  const API_BASE = process.env.REACT_APP_API_BASE || "";
 
   // NEW STATES FOR ATTEMPTS
   const [view, setView] = useState("menu"); // menu | exam | attempts | reviewAttempt | dashboard | charts | selectEditTest | editQuestions
@@ -77,7 +78,7 @@ function App() {
   useEffect(() => {
     if (!userId) return;
 
-    axios.get(`http://localhost:5000/api/user/${userId}/summary`)
+    axios.get(`${API_BASE}/api/user/${userId}/summary`)
       .then(res => setSummary(res.data));
   }, [userId]);
 
@@ -113,7 +114,7 @@ function App() {
   useEffect(() => {
     if (!userId) return;
 
-    axios.get(`http://localhost:5000/api/user/${userId}/chart`)
+    axios.get(`${API_BASE}/api/user/${userId}/chart`)
       .then(res => setChartData(res.data));
   }, [userId]);
 
@@ -122,7 +123,7 @@ function App() {
   useEffect(() => {
     if (!selectedTest) return;
     axios
-      .get(`http://localhost:5000/api/${selectedTest}/questions`)
+      .get(`${API_BASE}/api/${selectedTest}/questions`)
       .then((res) => {
         setQuestions(res.data);
         setAnswers({});
@@ -138,7 +139,7 @@ function App() {
 
   const handleSubmit = () => {
     axios
-      .post(`http://localhost:5000/api/${selectedTest}/submit_exam`, { answers })
+      .post(`${API_BASE}/api/${selectedTest}/submit_exam`, { answers })
       .then((res) => setScore(res.data))
       .catch((err) => console.error(err));
   };
@@ -158,7 +159,7 @@ function App() {
     // Re-use the existing logic to fetch questions for a test
     setCurrentEditTestId(testId);
     axios
-      .get(`http://localhost:5000/api/${testId}/questions`)
+      .get(`${API_BASE}/api/${testId}/questions`)
       .then((res) => {
         setEditingQuestionSet(res.data);
         setCurrentEditIndex(0);
@@ -182,7 +183,7 @@ function App() {
 
     try {
       const response = await axios.put(
-        `http://localhost:5000/api/question/${currentQuestion.id}/update_answer`,
+        `${API_BASE}/api/question/${currentQuestion.id}/update_answer`,
         {
           new_answer: selectedNewAnswer,
           test_id: currentEditTestId
@@ -240,7 +241,7 @@ function App() {
   // --------------------------
   const fetchAttempts = () => {
     axios
-      .get(`http://localhost:5000/api/user/${userId}/attempts`)
+      .get(`${API_BASE}/api/user/${userId}/attempts`)
       .then((res) => {
         setAttempts(res.data);
         setView("attempts");
@@ -257,20 +258,20 @@ function App() {
 
       // 1) Load attempt ANSWERS
       const detailsRes = await axios.get(
-        `http://localhost:5000/api/attempt/${attemptId}/details`
+        `${API_BASE}/api/attempt/${attemptId}/details`
       );
       setAttemptDetails(detailsRes.data);
 
       // 2) Get test_id for this attempt
       const infoRes = await axios.get(
-        `http://localhost:5000/api/attempt/${attemptId}/info`
+        `${API_BASE}/api/attempt/${attemptId}/info`
       );
 
       const testId = infoRes.data.test_id;  // example: "test1", "test2", "test3"
 
       // 3) Fetch correct question set for this attempt
       const qRes = await axios.get(
-        `http://localhost:5000/api/${testId}/questions`
+        `${API_BASE}/api/${testId}/questions`
       );
       setQuestions(qRes.data);
 
@@ -305,7 +306,7 @@ function App() {
         <button
           className="button-primary"
           onClick={() => {
-            axios.post("http://localhost:5000/api/login", login)
+            axios.post(`${API_BASE}/api/login`, login)
               .then(res => {
                 if (res.data.success) {
                   setUserId(res.data.user_id);
