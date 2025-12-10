@@ -1,0 +1,49 @@
+name: Deploy to GCP VM
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v3
+
+    # --- Build React Frontend ---
+    - name: Install Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+
+    - name: Build Frontend
+      run: |
+        cd Frontend
+        npm install
+        npm run build
+
+    # --- Copy Files to VM ---
+    - name: Copy files to VM
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.GCP_HOST }}
+        username: ${{ secrets.GCP_USER }}
+        key: ${{ secrets.GCP_KEY }}
+        source: "Backend/*, Frontend/build/*"
+        target: "/home/ubuntu/ExamHub"
+
+    # --- SSH into VM and restart services ---
+    - name: Restart backend on VM
+      uses: appleboy/ssh-action@v0.1.6
+      with:
+        host: ${{ secrets.GCP_HOST }}
+        username: ${{ secrets.GCP_USER }}
+        key: ${{ secrets.GCP_KEY }}
+        script: |
+          cd /home/ubuntu/ExamHub/Backend
+          source venv/bin/activate
+          pip install -r requirements.txt
+          sudo systemctl restart gunicorn
+          sudo systemctl restart nginx
