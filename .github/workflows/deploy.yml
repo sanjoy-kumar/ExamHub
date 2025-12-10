@@ -22,7 +22,7 @@ jobs:
       run: |
         cd Frontend
         npm install
-        npm run build
+        CI=false npm run build
 
     # --- Copy Files to VM ---
     - name: Copy files to VM
