@@ -287,7 +287,7 @@ function App() {
   if (!userId) {
     return (
       <div style={{ textAlign: "center", marginTop: "100px" }}>
-        <h2>Login</h2>
+        <h2>NACC Exam Portal</h2>
         <input
           placeholder="Username"
           value={login.username}
