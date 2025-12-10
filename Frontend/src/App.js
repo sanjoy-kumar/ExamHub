@@ -33,12 +33,11 @@ function App() {
   const [score, setScore] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
-  const API_BASE = process.env.REACT_APP_API_BASE || "";
+  const API_BASE = process.env.REACT_APP_API_BASE || "https://exam-hub.online";
 
   // NEW STATES FOR ATTEMPTS
   const [view, setView] = useState("menu"); // menu | exam | attempts | reviewAttempt | dashboard | charts | selectEditTest | editQuestions
   const [attempts, setAttempts] = useState([]);
-  const [selectedAttemptId, setSelectedAttemptId] = useState(null);
   const [attemptDetails, setAttemptDetails] = useState([]);
   const [userId, setUserId] = useState(null);
   const [login, setLogin] = useState({ username: "", password: "" });
