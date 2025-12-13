@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import "./App.css";
 import logo from "./assets/logo.png";
@@ -33,7 +33,7 @@ function App() {
   const [score, setScore] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
-  const API_BASE = process.env.REACT_APP_API_BASE || "https://exam-hub.online";
+  const API_BASE = process.env.REACT_APP_API_BASE || "";
 
   // NEW STATES FOR ATTEMPTS
   const [view, setView] = useState("menu"); // menu | exam | attempts | reviewAttempt | dashboard | charts | selectEditTest | editQuestions
@@ -41,6 +41,7 @@ function App() {
   const [attemptDetails, setAttemptDetails] = useState([]);
   const [userId, setUserId] = useState(null);
   const [login, setLogin] = useState({ username: "", password: "" });
+
 
   // NEW STATES FOR EDITING QUESTIONS
   const [editingQuestionSet, setEditingQuestionSet] = useState([]); // Questions for editing
@@ -73,16 +74,21 @@ function App() {
     test14: "601~800(800 Questions)"
   };
 
+  // Function wrapped in useCallback to fix the useEffect dependency warning later
+  const handleSubmit = useCallback(() => {
+    axios
+      .post(`${API_BASE}/api/${selectedTest}/submit_exam`, { answers })
+      .then((res) => setScore(res.data))
+      .catch((err) => console.error(err));
+  }, [API_BASE, selectedTest, answers]); // Dependencies for handleSubmit
 
+  // Fetch user summary
   useEffect(() => {
     if (!userId) return;
 
     axios.get(`${API_BASE}/api/user/${userId}/summary`)
       .then(res => setSummary(res.data));
-  }, [userId]);
-
-
-
+  }, [userId, API_BASE]); // FIX: Added API_BASE to dependency array
 
   // Timer
   useEffect(() => {
@@ -92,7 +98,7 @@ function App() {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(interval);
-            handleSubmit();
+            handleSubmit(); // Uses handleSubmit
             return 0;
           }
           return prev - 1;
@@ -100,7 +106,7 @@ function App() {
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [questions]);
+  }, [questions, handleSubmit]); // FIX: Added handleSubmit to dependency array
 
   // Format timer
   const formatTime = (secs) => {
@@ -110,12 +116,13 @@ function App() {
     return `${hrs}:${mins}:${secsRemaining}`;
   };
 
+  // Fetch chart data
   useEffect(() => {
     if (!userId) return;
 
     axios.get(`${API_BASE}/api/user/${userId}/chart`)
       .then(res => setChartData(res.data));
-  }, [userId]);
+  }, [userId, API_BASE]); // FIX: Added API_BASE to dependency array
 
 
   // Fetch questions based on selected test
@@ -130,18 +137,14 @@ function App() {
         setCurrentIndex(0);
       })
       .catch((err) => console.error(err));
-  }, [selectedTest]);
+  }, [selectedTest, API_BASE]); // FIX: Added API_BASE to dependency array
 
   const handleAnswerChange = (qId, option) => {
     setAnswers({ ...answers, [qId]: option });
   };
 
-  const handleSubmit = () => {
-    axios
-      .post(`${API_BASE}/api/${selectedTest}/submit_exam`, { answers })
-      .then((res) => setScore(res.data))
-      .catch((err) => console.error(err));
-  };
+  // Removed old handleSubmit definition and replaced with the useCallback version above
+  // const handleSubmit = () => { ... } 
 
   const handleNext = () => {
     if (currentIndex < questions.length - 1) setCurrentIndex(currentIndex + 1);
@@ -253,8 +256,6 @@ function App() {
   // --------------------------
   const fetchAttemptDetails = async (attemptId) => {
     try {
-      setSelectedAttemptId(attemptId);
-
       // 1) Load attempt ANSWERS
       const detailsRes = await axios.get(
         `${API_BASE}/api/attempt/${attemptId}/details`
